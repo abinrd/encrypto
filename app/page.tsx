@@ -1,6 +1,7 @@
 'use client';
 
 import FileUploader from '@/components/ui/FileUploader';
+import FileList from '@/components/ui/FileList';
 
 export default function Home() {
   return (
@@ -10,6 +11,7 @@ export default function Home() {
           Secure File Storage
         </h1>
         <FileUploader />
+        <FileList />
       </div>
     </main>
   );
