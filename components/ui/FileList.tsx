@@ -103,28 +103,31 @@
             throw new Error('Decryption failed - wrong password');
           }
   
-          // Convert the decrypted base64 string back to binary data
-          const binaryString = atob(decrypted);
+          // Parse the decrypted JSON containing content and metadata
+          const decryptedData = JSON.parse(decrypted);
+          const { content, metadata } = decryptedData;
+  
+          // Convert the decrypted base64 content back to binary data
+          const binaryString = atob(content);
           const bytes = new Uint8Array(binaryString.length);
           for (let i = 0; i < binaryString.length; i++) {
             bytes[i] = binaryString.charCodeAt(i);
           }
   
-          // Extract original filename and extension
+          // Extract original filename
           const originalFileName = fileName
             .split('-')
-            .slice(1) // Remove timestamp
+            .slice(1)
             .join('-')
             .replace('.encrypted', '');
   
-          // Get the correct MIME type
-          const fileExtension = originalFileName.split('.').pop()?.toLowerCase() || '';
-          const mimeType = getMimeType(fileExtension);
+          // Use the original MIME type from metadata
+          const mimeType = metadata.originalType || getMimeType(metadata.originalExt);
   
           // Create blob with correct MIME type
           const blob = new Blob([bytes], { type: mimeType });
           
-          // Trigger download with original filename
+          // Trigger download
           const url = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;

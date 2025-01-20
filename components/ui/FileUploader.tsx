@@ -79,32 +79,42 @@ export const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
       }
 
       try {
-        // Update progress to show encryption started
         updateFileProgress(file.name, { progress: 25 });
 
-        // Read and encrypt file
+        // Get file extension
+        const fileExtension = file.name.split('.').pop() || '';
+        
+        // Create metadata object to store original file type
+        const metadata = {
+          originalType: file.type,
+          originalExt: fileExtension
+        };
+
+        // Read and encrypt file with metadata
         const buffer = await file.arrayBuffer();
         const fileString = Buffer.from(buffer).toString('base64');
-        const encrypted = CryptoJS.AES.encrypt(fileString, password).toString();
+        const dataToEncrypt = JSON.stringify({
+          content: fileString,
+          metadata: metadata
+        });
         
-        // Update progress to show encryption completed
+        const encrypted = CryptoJS.AES.encrypt(dataToEncrypt, password).toString();
+        
         updateFileProgress(file.name, { progress: 50 });
         
         // Create encrypted blob
         const encryptedBlob = new Blob([encrypted], { type: 'text/plain' });
-        const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.encrypted`;
+        // Include extension in encrypted filename
+        const fileName = `${Date.now()}-${file.name}.encrypted`;
 
-        // Update progress to show upload started
         updateFileProgress(file.name, { progress: 75 });
 
-        // Upload to Supabase
         const { error: uploadError } = await supabase.storage
           .from('encrypted-files')
           .upload(fileName, encryptedBlob);
 
         if (uploadError) throw uploadError;
 
-        // Update progress to show completion
         updateFileProgress(file.name, { 
           status: 'complete',
           progress: 100
