@@ -92,7 +92,7 @@ export const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
         
         // Create encrypted blob
         const encryptedBlob = new Blob([encrypted], { type: 'text/plain' });
-        const fileName = `${Date.now()}-${file.name}.encrypted`;
+        const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.encrypted`;
 
         // Update progress to show upload started
         updateFileProgress(file.name, { progress: 75 });
