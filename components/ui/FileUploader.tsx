@@ -81,16 +81,14 @@ export const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
       try {
         updateFileProgress(file.name, { progress: 25 });
 
-        // Get file extension
         const fileExtension = file.name.split('.').pop() || '';
-        
-        // Create metadata object to store original file type
+
         const metadata = {
           originalType: file.type,
           originalExt: fileExtension
         };
 
-        // Read and encrypt file with metadata
+
         const buffer = await file.arrayBuffer();
         const fileString = Buffer.from(buffer).toString('base64');
         const dataToEncrypt = JSON.stringify({
@@ -128,7 +126,6 @@ export const FileUploader = ({ onUploadComplete }: FileUploaderProps) => {
       }
     }
 
-    // Clear completed uploads after a delay
     setTimeout(() => {
       setUploadingFiles(prev => prev.filter(file => file.status === 'uploading'));
       if (onUploadComplete) {

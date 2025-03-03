@@ -74,82 +74,76 @@
       }
     };
 
-    // Modify the handleDownload function to handle file types correctly
     const handleDownload = async (fileName: string) => {
-      if (!downloadPassword) {
-        setError('Please enter the decryption password');
-        return;
-      }
-  
+    if (!downloadPassword) {
+      setError('Please enter the decryption password');
+      return;
+    }
+
+    try {
+      addOperatingFile(fileName);
+      setError(null);
+
+      const { data, error } = await supabase
+        .storage
+        .from('encrypted-files')
+        .download(fileName);
+
+      if (error) throw error;
+
+      const encryptedText = await data.text();
+
       try {
-        addOperatingFile(fileName);
-        setError(null);
-  
-        const { data, error } = await supabase
-          .storage
-          .from('encrypted-files')
-          .download(fileName);
-  
-        if (error) throw error;
-  
-        const encryptedText = await data.text();
-  
-        try {
-          // Decrypt the content
-          const decrypted = CryptoJS.AES.decrypt(encryptedText, downloadPassword)
-            .toString(CryptoJS.enc.Utf8);
-          
-          if (!decrypted) {
-            throw new Error('Decryption failed - wrong password');
-          }
-  
-          // Parse the decrypted JSON containing content and metadata
-          const decryptedData = JSON.parse(decrypted);
-          const { content, metadata } = decryptedData;
-  
-          // Convert the decrypted base64 content back to binary data
-          const binaryString = atob(content);
-          const bytes = new Uint8Array(binaryString.length);
-          for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-          }
-  
-          // Extract original filename
-          const originalFileName = fileName
-            .split('-')
-            .slice(1)
-            .join('-')
-            .replace('.encrypted', '');
-  
-          // Use the original MIME type from metadata
-          const mimeType = metadata.originalType || getMimeType(metadata.originalExt);
-  
-          // Create blob with correct MIME type
-          const blob = new Blob([bytes], { type: mimeType });
-          
-          // Trigger download
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = originalFileName;
-          document.body.appendChild(a);
-          a.click();
-          window.URL.revokeObjectURL(url);
-          document.body.removeChild(a);
-  
-        } catch (decryptError) {
-          console.error('Decryption error:', decryptError);
-          setError('Incorrect password or corrupted file');
+        const decrypted = CryptoJS.AES.decrypt(encryptedText, downloadPassword)
+          .toString(CryptoJS.enc.Utf8);
+        
+        if (!decrypted) {
+          throw new Error('Decryption failed - wrong password');
         }
-      } catch (error) {
-        console.error('Download error:', error);
-        setError('Failed to download file. Please try again.');
-      } finally {
-        removeOperatingFile(fileName);
+
+        // Parse the decrypted JSON containing content and metadata
+        const decryptedData = JSON.parse(decrypted);
+        const { content, metadata } = decryptedData;
+
+        // Convert the decrypted base64 content back to binary data
+        const binaryString = atob(content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        const originalFileName = fileName
+          .split('-')
+          .slice(1)
+          .join('-')
+          .replace('.encrypted', '');
+
+        const mimeType = metadata.originalType || getMimeType(metadata.originalExt);
+
+        const blob = new Blob([bytes], { type: mimeType });
+        
+        // Trigger download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = originalFileName;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+      } catch (decryptError) {
+        console.error('Decryption error:', decryptError);
+        setError('Incorrect password or corrupted file');
       }
-    };
+    } catch (error) {
+      console.error('Download error:', error);
+      setError('Failed to download file. Please try again.');
+    } finally {
+      removeOperatingFile(fileName);
+    }
+  }
   
-    // Updated getMimeType function to handle extensions directly
     const getMimeType = (extension: string): string => {
       const mimeTypes: { [key: string]: string } = {
         'pdf': 'application/pdf',
@@ -160,7 +154,6 @@
         'jpg': 'image/jpeg',
         'jpeg': 'image/jpeg',
         'gif': 'image/gif',
-        // Add more mappings as needed
       };
       return mimeTypes[extension] || 'application/octet-stream';
     };
